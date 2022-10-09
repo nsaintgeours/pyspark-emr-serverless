@@ -1,0 +1,48 @@
+# Configuration to run a Spark job on AWS ElasticMapReduce (EMR) serverless service.
+
+emr:
+
+  app:
+    # Configuration of the AWS EMS Serverless Application
+    name: "demo-spark-job"
+    release_label: "emr-6.6.0"
+
+  spark_job:
+
+    # Local Python script to be used as Spark job entrypoint. It will be uploaded to S3 bucket.
+    entrypoint: "./src/spark_job.py"
+
+    # Other Python files to be used by Spark job. They will be uploaded to S3 bucket.
+    py_files: [
+      "./src/processing.py"
+    ]
+
+    # AWS S3 bucket where Spark logs will be written to, and where Python script will be uploaded.
+    s3_bucket_name: "my-output-bucket"
+
+    # Spark job must be given an AWS IAM role with read/write access to required S3 bucket(s)
+    job_role_arn: "arn:aws:iam::718509616803:role/EMRServerlessS3RuntimeRole"
+
+    # Spark job arguments will be passed to Spark job entrypoint
+    arguments: [
+        "s3://my-input-bucket/sample-dataset", # Job input data URI,
+        "s3://my-output-bucket/output" # Job output data URI
+    ]
+
+    # Extra Spark submit parameters
+    spark_submit_parameters:
+
+      # Spark cluster characteristics
+      spark.executor.instances: 10
+      spark.executor.cores: 4
+      spark.executor.memory: "16g"
+      spark.driver.cores: 4
+      spark.driver.memory: "16g"
+      spark.network.timeout: "320s"
+      spark.executor.heartbeatInterval: "300s"
+
+      # Python virtual environment to be used by Spark job
+      spark.archives: "s3://my-output-bucket/pyspark_env/pyspark_venv.tar.gz#environment"
+      spark.emr-serverless.driverEnv.PYSPARK_DRIVER_PYTHON: "./environment/bin/python"
+      spark.emr-serverless.driverEnv.PYSPARK_PYTHON: "./environment/bin/python"
+      spark.emr-serverless.executorEnv.PYSPARK_PYTHON: "./environment/bin/python"

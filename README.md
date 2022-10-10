@@ -3,6 +3,33 @@
 This project is a basic demo of how to run big data analytic using **PySpark**
 running on the **AWS ElasticMapReduce (EMR) Serverless** service.
 
+
+## Usage
+
+**IMPORTANT:** before using the project, make sure you have completed all the [**Prerequisites**](#prerequisites).
+
+To run analytics, just run:
+
+```bash
+my\path\to\pyspark-emr-serverless> python main.py
+```
+
+The `main.py` script will perform the following tasks:
+- create an AWS EMR Serverless Application (EMR app')
+- upload the Spark entrypoint `spark_job.py` from your computer to AWS S3 bucket (`my-output-bucket`)
+- upload required Python files (listed in configuration file) from your computer to AWS S3 bucket
+- submit PySpark job on the EMR app'
+  - PySpark job reads input data from AWS S3 bucket `my-input-bucket`
+  - PySpark job writes logs to AWS S3 bucket `my-output-bucket`
+  - PySpark job writes output data to AWS S3 bucket `my-output-bucket`
+- wait for PySpark job to finish  
+- fetch PySpark logs from AWS S3 and display them on the console
+- close and delete the EMR app'
+
+When the job is completed, the analytics output data is available in the output S3 bucket `my-output-bucket`.
+
+You can control Spark job configuration by editing the `conf.yaml` file. 
+
 ## Prerequisites
   
 ### Setup a Python virtual environment
@@ -202,7 +229,7 @@ The AWS EMR release version is given in the project configuration file `conf.yam
 If you need to use extra Python libraries to run your Spark job, one option is to pass a **Python Virtual Environment (Venv)**
 to your PySpark job. Here are the steps to follow: 
 
-**1. Create and pack a Python Virtual Environment**
+1. **Create and pack a Python Virtual Environment**
 
 We use `venv` and `venv-pack` to create and pack a virtual environment with the required libraries. 
 To be sure that the virtual environment will run on the AWS EC2 instances, we use Docker to create the virtual environment
@@ -244,27 +271,3 @@ emr:
       spark.emr-serverless.driverEnv.PYSPARK_PYTHON: "./environment/bin/python"
       spark.emr-serverless.executorEnv.PYSPARK_PYTHON: "./environment/bin/python"
 ``` 
-
-## Usage
-
-To run analytics, just run:
-
-```bash
-my\path\to\pyspark-emr-serverless> python main.py
-```
-
-The `main.py` script will perform the following tasks:
-- create an AWS EMR Serverless Application (EMR app')
-- upload the Spark entrypoint `spark_job.py` from your computer to AWS S3 bucket (`my-output-bucket`)
-- upload required Python files (listed in configuration file) from your computer to AWS S3 bucket
-- submit PySpark job on the EMR app'
-  - PySpark job reads input data from AWS S3 bucket `my-input-bucket`
-  - PySpark job writes logs to AWS S3 bucket `my-output-bucket`
-  - PySpark job writes output data to AWS S3 bucket `my-output-bucket`
-- wait for PySpark job to finish  
-- fetch PySpark logs from AWS S3 and display them on the console
-- close and delete the EMR app'
-
-When the job is completed, the analytics output data is available in the output S3 bucket `my-output-bucket`.
-
-You can control Spark job configuration by editing the `conf.yaml` file. 

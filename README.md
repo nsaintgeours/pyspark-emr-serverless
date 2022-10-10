@@ -46,7 +46,7 @@ In order to run the project, you need to have an active **AWS account**.
 See [here](https://aws.amazon.com/fr/premiumsupport/knowledge-center/create-and-activate-aws-account/) to create one if
 needed.
 
-### Grant permissions to use EMR Serverless
+### Grant permissions to use AWS EMR Serverless
 
 To use EMR Serverless, you need an AWS IAM user with an attached policy that grants permissions for EMR Serverless. 
 To create a user and attach the appropriate policy to that user, follow the instructions in [Create a user and grant permissions](https://docs.aws.amazon.com/emr/latest/EMR-Serverless-UserGuide/setting-up.html#setting-up-iam).
@@ -191,7 +191,59 @@ The following steps guide you through the process:
 > 8. Refresh the Attach permissions policy page, and choose EMRServerlessS3AndGlueAccessPolicy.
 > 9. In the Name, review, and create page, for Role name, enter a name for your role, for example, EMRServerlessS3RuntimeRole. To create this IAM role, choose Create role.
 
+### Prepare a Python virtual environment for your PySpark job
 
+When you launch a PySpark job on the AWS EMR Serverless service, your Python code runs on AWS EC2 instances 
+with Amazon Linux operating system, with a number of pre-installed applications, including Python and PySpark library.
+AWS gives the list of [application versions](https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-660-release.html) for each release of Amazon EMR.
+The AWS EMR release version is given in the project configuration file `conf.yaml`: 
+`emr.app.release_label: "emr-6.6.0"`.
+
+If you need to use extra Python libraries to run your Spark job, one option is to pass a **Python Virtual Environment (Venv)**
+to your PySpark job. Here are the steps to follow: 
+
+**1. Create and pack a Python Virtual Environment**
+
+We use `venv` and `venv-pack` to create and pack a virtual environment with the required libraries. 
+To be sure that the virtual environment will run on the AWS EC2 instances, we use Docker to create the virtual environment
+on top of an `amazonlinux` base image:
+
+- open a terminal, and **move to the `pyspark_env` folder**:
+
+```sh
+> cd my\path\to\pyspark-emr-serverless\pyspark_env
+my\path\to\pyspark-emr-serverless\pyspark_env> 
+```
+
+- edit the `Dockerfile` file and add extra Python libraries that are required by your Pyspark job
+
+- build and pack the Python virtual environment using the Docker container:
+
+```sh 
+my\path\to\pyspark-emr-serverless\pyspark_env> docker build --output . .
+```
+
+--> The packed virtual environment is written to `pyspark_venv.tar.gz` archive file.
+
+2. **Upload the packed Python Virtual Environment to AWS S3**
+
+The packed virtual environment must be uploaded to AWS S3, so that your PySpark job can access it. 
+Manually upload the `pyspark_venv.tar.gz` archive file to AWS S3 storage, for example to `s3://my-output-bucket/pyspark_env/pyspark_venv.tar.gz`
+
+3. **Edit Spark job configuration**
+
+You now need to tell your PySpark job to use the Python environment you just created. 
+To do so, you can edit the `conf.yaml` project configuration file, and add the following conf:
+
+```
+emr:
+  spark_job:
+      # Python virtual environment to be used by Spark job
+      spark.archives: "s3://my-output-bucket/pyspark_env/pyspark_venv.tar.gz#environment"
+      spark.emr-serverless.driverEnv.PYSPARK_DRIVER_PYTHON: "./environment/bin/python"
+      spark.emr-serverless.driverEnv.PYSPARK_PYTHON: "./environment/bin/python"
+      spark.emr-serverless.executorEnv.PYSPARK_PYTHON: "./environment/bin/python"
+``` 
 
 ## Usage
 
